@@ -49,6 +49,7 @@ def get_listings(html_file):
     output = []
     for i in range(len(listing_titles)):
         output.append((listing_titles[i].text.strip(), listing_ids[i]))
+    return output
 
 
 def get_listing_data(listing_id): 
@@ -76,7 +77,42 @@ def get_listing_data(listing_id):
         ('2022-004088STR', 'Entire Room', 422, 181)
 
     """
-    pass
+
+    # create the beautiful soup ~
+    with open(listing_id, "r", encoding="utf-8-sig") as file:
+        contents = file.read()
+        soup = BeautifulSoup(contents, "html.parser")
+
+    # find policy number
+    policy_number = soup.find("li", class_="f19phm7j dir dir-ltr")
+
+    # find place type
+    place_type = []
+    title = soup.find("div", class_="_cv5qq4")
+    if title:
+        if "private" in title.text.lower():
+            place_type = "Private Room"
+        elif "shared" in title.text.lower():
+            place_type = "Shared Room"
+        else:
+            place_type = "Entire Room"
+
+    # find number of reviews
+    reviews = []
+    number = soup.find('span', class_='_s65ijh7')
+    reviews = int(number.text[:-8]) if number else 0
+
+    # find nightly price
+    price = []
+    amount = soup.find('div', class_='_1jo4hgw')
+    num = re.sub(r'\D', '', amount.text)
+    price = int(num) if num else 0
+
+    # create tuple
+    output = (policy_number.text[15:], place_type, reviews, price)
+    return output
+
+    
 
 def create_detailed_listing_data(html_file): 
     """
