@@ -77,14 +77,18 @@ def get_listing_data(listing_id):
         ('2022-004088STR', 'Entire Room', 422, 181)
 
     """
+    # create file path
+    file_path = os.path.join('html_files', f"listing_{listing_id}.html")
 
     # create the beautiful soup ~
-    with open(listing_id, "r", encoding="utf-8-sig") as file:
+    with open(file_path, "r", encoding="utf-8-sig") as file:
         contents = file.read()
         soup = BeautifulSoup(contents, "html.parser")
 
     # find policy number
-    policy_number = soup.find("li", class_="f19phm7j dir dir-ltr")
+    policy_number = []
+    policy = soup.find("li", class_="f19phm7j dir dir-ltr")
+    policy_number = policy.text[15:]
 
     # find place type
     place_type = []
@@ -109,7 +113,7 @@ def get_listing_data(listing_id):
     price = int(num) if num else 0
 
     # create tuple
-    output = (policy_number.text[15:], place_type, reviews, price)
+    output = (policy_number, place_type, reviews, price)
     return output
 
     
@@ -133,7 +137,22 @@ def create_detailed_listing_data(html_file):
     Example output: 
         [('Loft in Mission District', '1944564', '2022-004088STR', 'Entire Room', 422, 181), ('Home in Mission District', '49043049', 'Pending', 'Entire Room', 67, 147), ...]    
     """
-    pass
+    
+    # call get_listings
+    listings = get_listings(html_file)
+
+    # call get_listing_data
+    complete_listings = []
+    for listing in listings:
+        listing_id = listing[1]
+        info = get_listing_data(listing_id)
+    
+    # create tuple
+        if info:
+            combined_info = listing + info
+            complete_listings.append(combined_info)
+
+    return complete_listings
 
 
 def output_csv(data, filename): 
