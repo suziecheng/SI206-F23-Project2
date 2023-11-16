@@ -86,12 +86,12 @@ def get_listing_data(listing_id):
         soup = BeautifulSoup(contents, "html.parser")
 
     # find policy number
-    policy_number = []
+    # policy_number = []
     policy = soup.find("li", class_="f19phm7j dir dir-ltr")
     policy_number = policy.text[15:]
 
     # find place type
-    place_type = []
+    # place_type = []
     title = soup.find("div", class_="_cv5qq4")
     if title:
         if "private" in title.text.lower():
@@ -102,12 +102,12 @@ def get_listing_data(listing_id):
             place_type = "Entire Room"
 
     # find number of reviews
-    reviews = []
+    # reviews = []
     number = soup.find('span', class_='_s65ijh7')
     reviews = int(number.text[:-8]) if number else 0
 
     # find nightly price
-    price = []
+    # price = []
     amount = soup.find('div', class_='_1jo4hgw')
     num = re.sub(r'\D', '', amount.text)
     price = int(num) if num else 0
@@ -198,16 +198,16 @@ def validate_policy_numbers(data):
     [('Loft in Mission District', '1944564'), ...]
 
     """
-    # locate valid policy numbers in data
+    # locate valid policy numbers
     invalid_listings = []
+    valid_numbers = [re.compile(r'^20\d{2}-00\d{4}STR$'), re.compile(r'^STR-000\d{4}$')]
 
+    # return invalid listings
     for listing in data:
         policy_number = listing[2]
-        valid_numbers = [re.compile(r'^20\d{2}-00\d{4}STR$'), re.compile(r'^STR-000\d{4}$')]
-
-        # add invalid policy numbers to invalid_listings
-        if not any(format_regex.match(policy_number) for format_regex in valid_numbers):
-            invalid_listings.append((listing[0], listing[1]))
+        if policy_number.lower() not in ['pending', 'exempt']:
+            if not any(format_regex.match(policy_number) for format_regex in valid_numbers):
+                invalid_listings.append((listing[0], listing[1]))
 
     return invalid_listings
 
@@ -256,10 +256,14 @@ class TestCases(unittest.TestCase):
         self.assertEqual(type(listings), list)
 
         # check that each item in the list is a tuple
+        any(self.assertIsInstance(x, tuple) for x in listings)
 
         # check that the first title and listing id tuple is correct (open the search results html and find it)
-
+        self.assertEqual(listings[0], ('Loft in Mission District', '1944564'))
+        
         # check that the last title and listing id tuple is correct (open the search results html and find it)
+        self.assertEqual(listings[-1], ('Guest suite in Mission District', '467507'))
+
 
     def test_get_listing_data(self):
         html_list = ["467507",
@@ -286,10 +290,14 @@ class TestCases(unittest.TestCase):
             self.assertEqual(type(listing_information[3]), int)
 
         # check that the first listing in the html_list has the correct policy number
+        self.assertEqual(listing_informations[0][0], 'STR-0005349')
 
         # check that the last listing in the html_list has the correct place type
+        self.assertEqual(listing_informations[-1][1], 'Entire Room')
 
         # check that the third listing has the correct cost
+        self.assertEqual(listing_informations[2][3], 181)
+
 
     def test_create_detailed_listing_data(self):
         # call create_detailed_listing_data on "html_files/search_results.html"
@@ -303,12 +311,16 @@ class TestCases(unittest.TestCase):
             # assert each item in the list of listings is a tuple
             self.assertEqual(type(item), tuple)
             # check that each tuple has a length of 6
+            self.assertEqual(len(item), 6)
 
         # check that the first tuple is made up of the following:
         # ('Loft in Mission District', '1944564', '2022-004088STR', 'Entire Room', 422, 181)
+        self.assertEqual(detailed_data[0], ('Loft in Mission District', '1944564', '2022-004088STR', 'Entire Room', 422, 181))
 
         # check that the last tuple is made up of the following:
         # ('Guest suite in Mission District', '467507', 'STR-0005349', 'Entire Room', 324, 165)
+        self.assertEqual(detailed_data[-1], ('Guest suite in Mission District', '467507', 'STR-0005349', 'Entire Room', 324, 165))
+
 
     def test_output_csv(self):
         # call create_detailed_listing_data on "html_files/search_results.html"
@@ -329,10 +341,14 @@ class TestCases(unittest.TestCase):
         self.assertEqual(len(csv_lines), 19)
 
         # check that the header row is correct
+        self.assertEqual(csv_lines[0], ["Listing Title", 'Listing ID', 'Policy Number', 'Place Type', 'Number of Reviews', 'Nightly Rate'])
 
         # check that the next row is Private room in Mission District,23672181,STR-0002892,Private Room,198,109
+        self.assertEqual(csv_lines[1], ['Private room in Mission District', '23672181', 'STR-0002892', 'Private Room', '198', '109'])
 
         # check that the last row is Guest suite in Mission District,50010586,STR-0004717,Entire Room,70,310
+        self.assertEqual(csv_lines[-1], ['Guest suite in Mission District', '50010586', 'STR-0004717', 'Entire Room', '70', '310'])
+
 
     def test_validate_policy_numbers(self):
         # call get_detailed_listing_data on "html_files/search_results.html"
@@ -347,6 +363,9 @@ class TestCases(unittest.TestCase):
 
         # check that the elements in the list are tuples
         # and that there are exactly two element in each tuple
+        for item in invalid_listings:
+            self.assertEqual(type(item), tuple)
+            self.assertEqual(len(item), 2)
 
 def main (): 
     detailed_data = create_detailed_listing_data("html_files/search_results.html")
@@ -355,4 +374,4 @@ def main ():
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
-    #main()
+    main()
