@@ -116,7 +116,6 @@ def get_listing_data(listing_id):
     output = (policy_number, place_type, reviews, price)
     return output
 
-    
 
 def create_detailed_listing_data(html_file): 
     """
@@ -171,7 +170,16 @@ def output_csv(data, filename):
 
 
     """
-    pass
+    # sort data from least costly to most
+    data = sorted(data, key=lambda x: x[-1])
+
+    # write out csv file
+    with open(filename, "w") as out:
+        csv_out = csv.writer(out)
+        csv_out.writerow(["Listing Title", "Listing ID", "Policy Number", "Place Type", "Number of Reviews", "Nightly Rate"])
+        for row in data:
+            csv_out.writerow(row)
+
 
 def validate_policy_numbers(data):
     """
@@ -190,7 +198,19 @@ def validate_policy_numbers(data):
     [('Loft in Mission District', '1944564'), ...]
 
     """
-    pass 
+    # locate valid policy numbers in data
+    invalid_listings = []
+
+    for listing in data:
+        policy_number = listing[2]
+        valid_numbers = [re.compile(r'^20\d{2}-00\d{4}STR$'), re.compile(r'^STR-000\d{4}$')]
+
+        # add invalid policy numbers to invalid_listings
+        if not any(format_regex.match(policy_number) for format_regex in valid_numbers):
+            invalid_listings.append((listing[0], listing[1]))
+
+    return invalid_listings
+
 
 # EXTRA CREDIT 
 def get_google_scholar_articles(query): 
